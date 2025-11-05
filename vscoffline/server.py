@@ -1332,7 +1332,7 @@ application.add_route('/cdn-config.json', VSCCDNConfig())  # CDN configuration e
 
 # Modern VS Code endpoints for AI/Chat features and CDN compatibility
 application.add_route('/chat.json', VSCChat())
-application.add_route('/vscode-unpkg/{path:.*}', VSCUnpkg())
+application.add_route('/vscode-unpkg/{path}', VSCUnpkg())
 
 application.add_route('/browse', VSCDirectoryBrowse(vsc.ARTIFACTS))
 application.add_route('/', VSCIndex())
