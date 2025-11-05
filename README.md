@@ -280,3 +280,95 @@ VSCodeOffline now supports 29 comprehensive VS Code platforms:
 --list-platforms
 ```
 
+## Container Images
+
+Pre-built container images are automatically published to GitHub Container Registry (GHCR) on every release:
+
+- **vscsync**: `ghcr.io/speedyh30/vscodeoffline/vscsync:latest`
+- **vscgallery**: `ghcr.io/speedyh30/vscodeoffline/vscgallery:latest`
+
+Tagged versions are also available (e.g., `:2.0.0`, `:2.0.0-beta`).
+
+### Using Pre-built Images
+
+The included `docker-compose.yml` uses the pre-built images by default:
+
+```bash
+# Pull and run the latest images
+docker-compose pull
+docker-compose up -d
+```
+
+### Building Locally
+
+To build the images locally instead:
+
+```bash
+# Build both images
+docker-compose build
+
+# Or build individually
+docker build -f ./vscoffline/vscsync/Dockerfile -t vscsync .
+docker build -f ./vscoffline/vscgallery/Dockerfile -t vscgallery .
+```
+
+## Fork and Contribution Guide
+
+### For Fork Maintainers
+
+If you fork this repository, the GitHub Actions workflow will automatically adapt to your fork:
+
+1. **Container Images**: Images will be published to `ghcr.io/YOUR_USERNAME/vscodeoffline/vscsync` and `ghcr.io/YOUR_USERNAME/vscodeoffline/vscgallery`
+
+2. **No Additional Setup Required**: The workflow uses `${{ github.repository }}` which automatically uses your fork's namespace
+
+3. **Docker Compose**: Update the image names in `docker-compose.yml` to point to your fork:
+   ```yaml
+   services:
+     vscsync:
+       image: ghcr.io/YOUR_USERNAME/vscodeoffline/vscsync:latest
+     vscgallery:  
+       image: ghcr.io/YOUR_USERNAME/vscodeoffline/vscgallery:latest
+   ```
+
+4. **Permissions**: Ensure your repository has Actions enabled and the workflow has permission to write to GitHub Container Registry (enabled by default in public repos)
+
+### Making Container Images Public
+
+By default, GHCR images from public repositories are public. If you need to make them public manually:
+
+1. Go to your GitHub profile → Packages
+2. Find your vscodeoffline packages
+3. Go to Package settings → Change visibility → Public
+
+### Local Development
+
+For development and testing:
+
+```bash
+# Clone your fork
+git clone https://github.com/YOUR_USERNAME/vscodeoffline.git
+cd vscodeoffline
+
+# Build and test locally
+docker-compose build
+docker-compose up -d
+
+# Run sync to populate artifacts
+docker-compose exec vscsync python /app/sync.py --sync
+
+# Check the gallery
+open http://localhost:8080
+```
+
+### Contributing Back
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes with proper commit messages
+4. Ensure GPG signing is set up for verified commits
+5. Push to your fork (`git push origin feature/amazing-feature`)  
+6. Open a Pull Request with a clear description
+
+All commits should be GPG signed. See the [GitHub documentation](https://docs.github.com/en/authentication/managing-commit-signature-verification) for setup instructions.
+
