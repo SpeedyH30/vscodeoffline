@@ -30,7 +30,7 @@ On the non-Internet connected system, **vscgallery**:
 - **NEW**: Intelligent caching system for improved performance and reduced filesystem access;
 - **NEW**: Comprehensive error handling and logging throughout the application.
 
-## Recent Improvements (v2.3.6-beta)
+## Recent Improvements (v2.0.0)
 
 ### Status Dashboard
 - **Real-time monitoring**: Live status page at `/status` showing system health, extension counts, and cache information
@@ -234,3 +234,4 @@ optional arguments:
   --debug               Show debug output
   --logfile LOGFILE     Sets a logfile to store loggging output
 ```
+
