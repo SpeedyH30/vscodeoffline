@@ -1,7 +1,7 @@
 services:
 
   vscsync:
-    image: ghcr.io/speedyh30/vscodeoffline/vscsync:2.0.0
+    image: ghcr.io/speedyh30/vscodeoffline/vscsync:${VSCODE_VERSION:-latest}
     platform: linux/amd64
     build:
       context: ./
@@ -19,7 +19,7 @@ services:
       # - SYNCARGS=--sync --logfile /logs/sync.log
 
   vscgallery:
-    image: ghcr.io/speedyh30/vscodeoffline/vscgallery:2.0.0
+    image: ghcr.io/speedyh30/vscodeoffline/vscgallery:${VSCODE_VERSION:-latest}
     platform: linux/amd64
     build:
       context: ./

@@ -282,21 +282,62 @@ VSCodeOffline now supports 29 comprehensive VS Code platforms:
 
 ## Container Images
 
-Pre-built container images are automatically published to GitHub Container Registry (GHCR) on every release:
+Pre-built container images are automatically published to GitHub Container Registry (GHCR) with multiple tagging strategies:
 
-- **vscsync**: `ghcr.io/speedyh30/vscodeoffline/vscsync:latest`
-- **vscgallery**: `ghcr.io/speedyh30/vscodeoffline/vscgallery:latest`
+### Available Tags
 
-Tagged versions are also available (e.g., `:2.0.0`, `:2.0.0-beta`).
+| Tag Format | Example | Use Case |
+|------------|---------|----------|
+| `:latest` | `ghcr.io/speedyh30/vscodeoffline/vscsync:latest` | Development/testing (always latest main branch) |
+| `:v{version}` | `ghcr.io/speedyh30/vscodeoffline/vscsync:2.0.0` | Production (pinned release versions) |
+| `:v{major}.{minor}` | `ghcr.io/speedyh30/vscodeoffline/vscsync:2.0` | Auto-update patch versions |
+| `:v{major}` | `ghcr.io/speedyh30/vscodeoffline/vscsync:2` | Auto-update minor/patch versions |
+| `:{branch}-{sha}` | `ghcr.io/speedyh30/vscodeoffline/vscsync:main-abc123` | Development builds from specific commits |
+
+### Recommended Usage
+
+**Production**: Use specific version tags for stability
+```yaml
+services:
+  vscsync:
+    image: ghcr.io/speedyh30/vscodeoffline/vscsync:2.0.0
+  vscgallery:
+    image: ghcr.io/speedyh30/vscodeoffline/vscgallery:2.0.0
+```
+
+**Development**: Use `:latest` for the newest features
+```yaml
+services:
+  vscsync:
+    image: ghcr.io/speedyh30/vscodeoffline/vscsync:latest
+  vscgallery:
+    image: ghcr.io/speedyh30/vscodeoffline/vscgallery:latest
+```
 
 ### Using Pre-built Images
 
-The included `docker-compose.yml` uses the pre-built images by default:
+Choose the appropriate docker-compose file for your use case:
 
+**Development** (uses `:latest` tags):
 ```bash
-# Pull and run the latest images
+# Pull and run the latest development images
 docker-compose pull
 docker-compose up -d
+```
+
+**Production** (uses pinned version tags):
+```bash
+# Use the production compose file with pinned versions
+docker-compose -f docker-compose.prod.yml pull
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+**Custom Version**:
+```bash
+# Override image tags for specific versions
+export VSCODE_VERSION=2.0.0-beta
+docker-compose up -d
+# Or manually edit docker-compose.yml image tags
 ```
 
 ### Building Locally
@@ -326,10 +367,15 @@ If you fork this repository, the GitHub Actions workflow will automatically adap
    ```yaml
    services:
      vscsync:
-       image: ghcr.io/YOUR_USERNAME/vscodeoffline/vscsync:latest
+       image: ghcr.io/YOUR_USERNAME/vscodeoffline/vscsync:${VSCODE_VERSION:-latest}
      vscgallery:  
-       image: ghcr.io/YOUR_USERNAME/vscodeoffline/vscgallery:latest
+       image: ghcr.io/YOUR_USERNAME/vscodeoffline/vscgallery:${VSCODE_VERSION:-latest}
    ```
+
+4. **Version Management**: 
+   - Use `.env` file: `echo "VSCODE_VERSION=2.0.0" > .env`
+   - Or export environment variable: `export VSCODE_VERSION=2.0.0`
+   - Production deployments should use `docker-compose.prod.yml` with pinned versions
 
 4. **Permissions**: Ensure your repository has Actions enabled and the workflow has permission to write to GitHub Container Registry (enabled by default in public repos)
 

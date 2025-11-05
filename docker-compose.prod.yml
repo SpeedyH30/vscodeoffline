@@ -1,0 +1,28 @@
+services:
+
+  vscsync:
+    image: ghcr.io/speedyh30/vscodeoffline/vscsync:2.0.0
+    platform: linux/amd64
+    network_mode: host
+    volumes:
+      - ./artifacts/:/artifacts/
+    environment:
+      - SYNCARGS=--sync
+      # Enable to sync all extensions
+      # - SYNCARGS=--syncall
+      # Enable a logfile
+      # - SYNCARGS=--sync --logfile /logs/sync.log
+    restart: unless-stopped
+
+  vscgallery:
+    image: ghcr.io/speedyh30/vscodeoffline/vscgallery:2.0.0
+    platform: linux/amd64
+    volumes:
+      - ./artifacts/:/artifacts/
+    ports:
+      - 8080:8080
+    environment:
+      - BIND=0.0.0.0:8080
+    restart: unless-stopped
+    depends_on:
+      - vscsync
