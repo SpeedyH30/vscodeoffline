@@ -1,0 +1,40 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "vscode-offline.fullname" . }}
+  labels:
+    {{- include "vscode-offline.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "vscode-offline.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    {{- if .Values.networkPolicy.ingress.from }}
+    - from:
+        {{- toYaml .Values.networkPolicy.ingress.from | nindent 8 }}
+    {{- else }}
+    - {}
+    {{- end }}
+  egress:
+    {{- if .Values.networkPolicy.egress.to }}
+    - to:
+        {{- toYaml .Values.networkPolicy.egress.to | nindent 8 }}
+    {{- else }}
+    # Allow DNS resolution
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow HTTPS outbound for sync operations
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443
+    {{- end }}
+{{- end }}

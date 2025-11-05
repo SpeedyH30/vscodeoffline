@@ -1,0 +1,93 @@
+{{- if .Values.vscgallery.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vscode-offline.fullname" . }}-gallery
+  labels:
+    {{- include "vscode-offline.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gallery
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.vscgallery.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "vscode-offline.gallerySelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "vscode-offline.gallerySelectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/ssl-secret: {{ include (print $.Template.BasePath "/ssl-secret.yaml") . | sha256sum }}
+    spec:
+      {{- include "vscode-offline.imagePullSecrets" . | nindent 6 }}
+      serviceAccountName: {{ include "vscode-offline.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.vscgallery.securityContext | nindent 8 }}
+      containers:
+        - name: gallery
+          securityContext:
+            {{- toYaml .Values.vscgallery.containerSecurityContext | nindent 12 }}
+          image: "{{ .Values.vscgallery.image.repository }}:{{ .Values.vscgallery.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.vscgallery.image.pullPolicy }}
+          ports:
+            - name: https
+              containerPort: {{ .Values.vscgallery.service.targetPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            {{- toYaml .Values.vscgallery.resources | nindent 12 }}
+          volumeMounts:
+            - name: artifacts
+              mountPath: /artifacts
+            - name: ssl-certs
+              mountPath: /app/ssl
+              readOnly: true
+          env:
+            - name: SSL_CERT_PATH
+              value: "/app/ssl/vscoffline.crt"
+            - name: SSL_KEY_PATH
+              value: "/app/ssl/vscoffline.key"
+      volumes:
+        - name: artifacts
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "vscode-offline.fullname" . }}-artifacts
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: ssl-certs
+          {{- if .Values.ssl.enabled }}
+          secret:
+            secretName: {{ .Values.ssl.secretName | default (printf "%s-ssl" (include "vscode-offline.fullname" .)) }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+      {{- with .Values.vscgallery.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.vscgallery.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.vscgallery.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

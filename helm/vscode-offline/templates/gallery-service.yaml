@@ -1,0 +1,22 @@
+{{- if .Values.vscgallery.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "vscode-offline.fullname" . }}-gallery
+  labels:
+    {{- include "vscode-offline.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gallery
+  {{- with .Values.vscgallery.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.vscgallery.service.type }}
+  ports:
+    - port: {{ .Values.vscgallery.service.port }}
+      targetPort: {{ .Values.vscgallery.service.targetPort }}
+      protocol: TCP
+      name: https
+  selector:
+    {{- include "vscode-offline.gallerySelectorLabels" . | nindent 4 }}
+{{- end }}

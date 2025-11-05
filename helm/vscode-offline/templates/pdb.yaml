@@ -1,0 +1,19 @@
+{{- if and .Values.vscgallery.enabled .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "vscode-offline.fullname" . }}-gallery
+  labels:
+    {{- include "vscode-offline.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gallery
+spec:
+  {{- if .Values.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  {{- end }}
+  {{- if .Values.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "vscode-offline.gallerySelectorLabels" . | nindent 6 }}
+{{- end }}

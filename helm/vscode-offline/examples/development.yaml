@@ -1,0 +1,61 @@
+# Development deployment with minimal resources
+# Example: helm install vscode-offline-dev ./helm/vscode-offline -f examples/development.yaml
+
+# Minimal resources for development
+vscgallery:
+  replicaCount: 1
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  # NodePort for local access
+  service:
+    type: NodePort
+    port: 8080
+
+# Lightweight sync job
+vscsync:
+  enabled: true
+  schedule: "0 6 * * 0"  # Weekly on Sunday at 6 AM
+  
+  config:
+    syncAll: false
+    checkRecommendedExtensions: true
+    totalRecommended: 25
+    updateExtensions: true
+    updateBinaries: false  # Skip binaries in dev
+    platforms: "darwin-x64,linux-x64"  # Only common platforms
+    includeServer: false
+    includeCli: false
+    includeArm: false
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Smaller storage for development
+persistence:
+  enabled: true
+  artifacts:
+    size: 10Gi
+  ssl:
+    size: 100Mi
+
+# Disable production features
+autoscaling:
+  enabled: false
+
+podDisruptionBudget:
+  enabled: false
+
+networkPolicy:
+  enabled: false

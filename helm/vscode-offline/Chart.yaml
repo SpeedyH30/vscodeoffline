@@ -1,0 +1,21 @@
+apiVersion: v2
+name: vscode-offline
+description: A Helm chart for VSCode Offline - Extension Gallery and Binary Server
+type: application
+version: 2.0.0
+appVersion: "2.0.0"
+keywords:
+  - vscode
+  - extensions
+  - offline
+  - development
+home: https://github.com/SpeedyH30/vscodeoffline
+sources:
+  - https://github.com/SpeedyH30/vscodeoffline
+maintainers:
+  - name: SpeedyH30
+    email: speedyh30@gmail.com
+    url: https://github.com/SpeedyH30
+annotations:
+  category: Development
+  licenses: MIT

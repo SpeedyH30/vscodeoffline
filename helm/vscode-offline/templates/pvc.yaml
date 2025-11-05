@@ -1,0 +1,47 @@
+{{- if .Values.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "vscode-offline.fullname" . }}-artifacts
+  labels:
+    {{- include "vscode-offline.labels" . | nindent 4 }}
+    app.kubernetes.io/component: storage
+  {{- with .Values.persistence.artifacts.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.artifacts.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.artifacts.size }}
+  {{- $storageClass := include "vscode-offline.storageClass" .Values.persistence.artifacts }}
+  {{- if $storageClass }}
+  storageClassName: {{ $storageClass }}
+  {{- end }}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "vscode-offline.fullname" . }}-ssl
+  labels:
+    {{- include "vscode-offline.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ssl
+  {{- with .Values.persistence.ssl.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.ssl.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.ssl.size }}
+  {{- $storageClass := include "vscode-offline.storageClass" .Values.persistence.ssl }}
+  {{- if $storageClass }}
+  storageClassName: {{ $storageClass }}
+  {{- end }}
+{{- end }}

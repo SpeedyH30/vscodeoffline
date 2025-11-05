@@ -1,0 +1,207 @@
+# Default values for vscode-offline.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global configuration
+global:
+  # Container registry settings
+  imageRegistry: ghcr.io
+  imagePullSecrets: []
+  # Storage class for persistent volumes
+  storageClass: ""
+
+# VSCode Gallery service configuration
+vscgallery:
+  enabled: true
+  replicaCount: 1
+  
+  image:
+    repository: ghcr.io/speedyh30/vscodeoffline/vscgallery
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+    annotations: {}
+  
+  # Ingress configuration
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+      # cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - host: vscode-gallery.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+      # - secretName: vscode-gallery-tls
+      #   hosts:
+      #     - vscode-gallery.local
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  # Node selector, tolerations and affinity
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+  
+  # Container security context
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+        - ALL
+
+# VSCode Sync service configuration
+vscsync:
+  enabled: true
+  
+  # Sync job configuration
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  suspend: false
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  
+  image:
+    repository: ghcr.io/speedyh30/vscodeoffline/vscsync
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  
+  # Sync configuration
+  config:
+    # Sync options
+    syncAll: false
+    checkRecommendedExtensions: true
+    totalRecommended: 50
+    updateExtensions: true
+    updateBinaries: true
+    
+    # Platform filters
+    platforms: ""  # Empty = all platforms
+    excludePlatforms: ""
+    includeServer: true
+    includeCli: true
+    includeArm: true
+    
+    # Advanced options
+    prerelease: false
+    debug: false
+  
+  # Resource limits for sync jobs
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+  
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+        - ALL
+
+# Persistent storage configuration
+persistence:
+  enabled: true
+  
+  # Artifacts storage (extensions and binaries)
+  artifacts:
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 50Gi
+    annotations: {}
+    # existingClaim: ""
+  
+  # SSL certificates storage
+  ssl:
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    annotations: {}
+    # existingClaim: ""
+
+# SSL Configuration
+ssl:
+  # Use existing SSL certificates
+  enabled: true
+  # Create secret from existing certificates
+  createSecret: true
+  secretName: vscode-offline-ssl
+  # Certificate files (base64 encoded or plain text)
+  certificate: ""  # Will use default self-signed cert if empty
+  privateKey: ""   # Will use default key if empty
+
+# ServiceAccount configuration
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# Pod Security Policy
+podSecurityPolicy:
+  enabled: false
+
+# Network Policy
+networkPolicy:
+  enabled: false
+  ingress:
+    from: []
+  egress:
+    to: []
+
+# Monitoring and observability
+monitoring:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+    namespace: ""
+    interval: 30s
+    path: /metrics
+  
+# Autoscaling (for vscgallery only)
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  # maxUnavailable: 1

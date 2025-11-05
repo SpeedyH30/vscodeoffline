@@ -1,0 +1,40 @@
+# Minimal deployment with only gallery service
+# Example: helm install vscode-offline-minimal ./helm/vscode-offline -f examples/minimal.yaml
+
+# Only gallery service, no sync
+vscgallery:
+  enabled: true
+  replicaCount: 1
+  
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  
+  service:
+    type: ClusterIP
+    port: 8080
+
+# Disable sync job
+vscsync:
+  enabled: false
+
+# Use existing PVC or emptyDir
+persistence:
+  enabled: false
+
+# Disable all optional features
+autoscaling:
+  enabled: false
+
+podDisruptionBudget:
+  enabled: false
+
+networkPolicy:
+  enabled: false
+
+monitoring:
+  enabled: false

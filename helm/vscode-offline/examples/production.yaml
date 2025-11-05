@@ -1,0 +1,89 @@
+# Production deployment with ingress, SSL, and autoscaling
+# Example: helm install vscode-offline ./helm/vscode-offline -f examples/production.yaml
+
+# Production-grade resource limits
+vscgallery:
+  replicaCount: 2
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  
+  # Enable ingress with TLS
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    hosts:
+      - host: vscode-gallery.yourdomain.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: vscode-gallery-tls
+        hosts:
+          - vscode-gallery.yourdomain.com
+
+# Sync job with recommended extensions
+vscsync:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  
+  config:
+    checkRecommendedExtensions: true
+    totalRecommended: 100
+    updateExtensions: true
+    updateBinaries: true
+    includeServer: true
+    includeCli: true
+    includeArm: true
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+# Large persistent storage for production
+persistence:
+  enabled: true
+  artifacts:
+    size: 200Gi
+    storageClass: "fast-ssd"
+  ssl:
+    size: 1Gi
+    storageClass: "fast-ssd"
+
+# Enable autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Pod disruption budget for high availability
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Network policies for security
+networkPolicy:
+  enabled: true
+
+# Monitoring
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s

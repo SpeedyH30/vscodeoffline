@@ -1,0 +1,93 @@
+{{- if .Values.vscsync.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "vscode-offline.fullname" . }}-sync
+  labels:
+    {{- include "vscode-offline.labels" . | nindent 4 }}
+    app.kubernetes.io/component: sync
+spec:
+  schedule: {{ .Values.vscsync.schedule | quote }}
+  suspend: {{ .Values.vscsync.suspend }}
+  successfulJobsHistoryLimit: {{ .Values.vscsync.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.vscsync.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "vscode-offline.syncSelectorLabels" . | nindent 12 }}
+        spec:
+          {{- include "vscode-offline.imagePullSecrets" . | nindent 10 }}
+          serviceAccountName: {{ include "vscode-offline.serviceAccountName" . }}
+          restartPolicy: OnFailure
+          securityContext:
+            {{- toYaml .Values.vscsync.securityContext | nindent 12 }}
+          containers:
+            - name: sync
+              securityContext:
+                {{- toYaml .Values.vscsync.containerSecurityContext | nindent 16 }}
+              image: "{{ .Values.vscsync.image.repository }}:{{ .Values.vscsync.image.tag | default .Chart.AppVersion }}"
+              imagePullPolicy: {{ .Values.vscsync.image.pullPolicy }}
+              command:
+                - python
+                - /app/sync.py
+              args:
+                - --artifacts
+                - /artifacts
+                {{- if .Values.vscsync.config.syncAll }}
+                - --syncall
+                {{- else }}
+                - --sync
+                {{- end }}
+                {{- if .Values.vscsync.config.checkRecommendedExtensions }}
+                - --check-recommended-extensions
+                - --total-recommended
+                - {{ .Values.vscsync.config.totalRecommended | quote }}
+                {{- end }}
+                {{- if .Values.vscsync.config.updateExtensions }}
+                - --update-extensions
+                {{- end }}
+                {{- if .Values.vscsync.config.updateBinaries }}
+                - --update-binaries
+                {{- end }}
+                {{- if .Values.vscsync.config.platforms }}
+                - --platforms
+                - {{ .Values.vscsync.config.platforms | quote }}
+                {{- end }}
+                {{- if .Values.vscsync.config.excludePlatforms }}
+                - --exclude-platforms
+                - {{ .Values.vscsync.config.excludePlatforms | quote }}
+                {{- end }}
+                {{- if .Values.vscsync.config.includeServer }}
+                - --include-server
+                {{- end }}
+                {{- if .Values.vscsync.config.includeCli }}
+                - --include-cli
+                {{- end }}
+                {{- if .Values.vscsync.config.includeArm }}
+                - --include-arm
+                {{- end }}
+                {{- if .Values.vscsync.config.prerelease }}
+                - --prerelease-extensions
+                {{- end }}
+                {{- if .Values.vscsync.config.debug }}
+                - --debug
+                {{- end }}
+              resources:
+                {{- toYaml .Values.vscsync.resources | nindent 16 }}
+              volumeMounts:
+                - name: artifacts
+                  mountPath: /artifacts
+              env:
+                - name: PYTHONUNBUFFERED
+                  value: "1"
+          volumes:
+            - name: artifacts
+              {{- if .Values.persistence.enabled }}
+              persistentVolumeClaim:
+                claimName: {{ include "vscode-offline.fullname" . }}-artifacts
+              {{- else }}
+              emptyDir: {}
+              {{- end }}
+{{- end }}
