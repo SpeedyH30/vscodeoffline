@@ -15,7 +15,6 @@ from platform import release
 import logging as log
 from pytimeparse.timeparse import timeparse
 import vsc
-from distutils.dir_util import create_tree
 from requests.adapters import HTTPAdapter, Retry
 
 
@@ -245,7 +244,7 @@ class VSCExtensionDefinition(object):
                     return
                 asset = file["assetType"]
                 destfile = os.path.join(ver_destination, f'{asset}')
-                create_tree(os.path.abspath(os.sep), (destfile,))
+                os.makedirs(os.path.dirname(destfile), exist_ok=True)
                 if not os.path.exists(destfile):
                     for i in range(5):
                         try:

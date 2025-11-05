@@ -1,18 +1,140 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
-        <title>VSCode Gallery</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Offline VSCode Gallery - Directory Browser</title>
+        <link href="{BOOTSTRAP_CSS_URL}" rel="stylesheet">
+        <link href="{BOOTSTRAP_ICONS_URL}" rel="stylesheet">
+        <style>
+            /* Skip link for keyboard navigation */
+            .skip-link {{
+                position: absolute;
+                top: -40px;
+                left: 6px;
+                background: #000;
+                color: #fff;
+                padding: 8px;
+                text-decoration: none;
+                z-index: 1000;
+                border-radius: 4px;
+            }}
+            .skip-link:focus {{
+                top: 6px;
+            }}
+            
+            .directory-item {{ 
+                font-family: 'Courier New', monospace;
+                border: 2px solid transparent;
+            }}
+            
+            /* Enhanced focus indicators */
+            .directory-item:focus {{
+                border-color: #0d6efd;
+                outline: 3px solid #0d6efd;
+                outline-offset: 2px;
+            }}
+            
+            .btn:focus {{
+                box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+            }}
+            
+            .form-control:focus {{
+                border-color: #0d6efd;
+                box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+            }}
+            
+            /* Improved color contrast */
+            .folder-icon {{ color: #b8860b; }} /* Darker gold for better contrast */
+            .file-icon {{ color: #198754; }} /* Bootstrap success color */
+            .breadcrumb-item a {{ text-decoration: none; }}
+            .search-highlight {{ background-color: #fff3cd; }}
+            
+            /* High contrast mode support */
+            @media (prefers-contrast: high) {{
+                .folder-icon {{ color: #000; }}
+                .file-icon {{ color: #000; }}
+                .directory-item {{
+                    border: 2px solid #000;
+                }}
+            }}
+            
+            /* Reduced motion preferences */
+            @media (prefers-reduced-motion: reduce) {{
+                * {{
+                    animation-duration: 0.01ms !important;
+                    animation-iteration-count: 1 !important;
+                    transition-duration: 0.01ms !important;
+                }}
+            }}
+            
+            /* Screen reader only text */
+            .visually-hidden-focusable:not(:focus):not(:focus-within) {{
+                position: absolute !important;
+                width: 1px !important;
+                height: 1px !important;
+                padding: 0 !important;
+                margin: -1px !important;
+                overflow: hidden !important;
+                clip: rect(0, 0, 0, 0) !important;
+                white-space: nowrap !important;
+                border: 0 !important;
+            }}
+        </style>
     </head>
-    <body>
-        <tt>
-            <h1>Visual Studio Code - Offline Gallery and Updater</h1>
-            <a href="/">Home</a>
-            <br />
-            <br />
-            <strong>Path: {PATH}</strong>
-            <br />
-            <br />
-            {CONTENT}
-        </tt>
+    <body class="bg-light">
+        <!-- Skip navigation for keyboard users -->
+        <a href="#main-content" class="skip-link visually-hidden-focusable">Skip to main content</a>
+        
+        <header role="banner">
+            <nav class="navbar navbar-dark bg-dark" aria-label="Primary navigation">
+                <div class="container-fluid">
+                    <a class="navbar-brand" href="/" aria-describedby="brand-desc">
+                        <i class="bi bi-code-square me-2" aria-hidden="true"></i>
+                        Offline VSCode Gallery
+                    </a>
+                    <span id="brand-desc" class="visually-hidden">Return to homepage</span>
+                    
+                    <nav class="navbar-nav" aria-label="Secondary navigation">
+                        <a class="nav-link text-light" href="/" aria-describedby="home-desc">
+                            <i class="bi bi-house-door me-1" aria-hidden="true"></i>
+                            Home
+                        </a>
+                        <span id="home-desc" class="visually-hidden">Navigate to main page</span>
+                    </nav>
+                </div>
+            </nav>
+        </header>
+        
+        <main id="main-content" class="container-fluid mt-4">
+            <div class="row">
+                <div class="col-12">
+                    <article class="card" role="main" aria-labelledby="browser-title">
+                        <header class="card-header bg-primary text-white">
+                            <h1 id="browser-title" class="card-title mb-0 h5">
+                                <i class="bi bi-folder2-open me-2" aria-hidden="true"></i>
+                                Directory Browser
+                            </h1>
+                        </header>
+                        <div class="card-body">
+                            <nav aria-label="Current location breadcrumb" class="mb-3">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item">
+                                        <i class="bi bi-hdd me-1" aria-hidden="true"></i>
+                                        <strong>Current Path:</strong> 
+                                        <span aria-live="polite">{PATH}</span>
+                                    </li>
+                                </ol>
+                            </nav>
+                            <div role="region" aria-label="Directory contents and navigation">
+                                {CONTENT}
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </main>
+        
+        <script src="{BOOTSTRAP_JS_URL}"></script>
     </body>
 </html>

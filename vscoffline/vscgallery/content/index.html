@@ -1,17 +1,218 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
-        <title>VSCode Gallery</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Offline VSCode Gallery - Offline Extension & Binary Server</title>
+        <link href="{BOOTSTRAP_CSS_URL}" rel="stylesheet">
+        <link href="{BOOTSTRAP_ICONS_URL}" rel="stylesheet">
+        <style>
+            /* Skip link for keyboard navigation */
+            .skip-link {{
+                position: absolute;
+                top: -40px;
+                left: 6px;
+                background: #000;
+                color: #fff;
+                padding: 8px;
+                text-decoration: none;
+                z-index: 1000;
+                border-radius: 4px;
+            }}
+            .skip-link:focus {{
+                top: 6px;
+            }}
+            
+            .hero-section {{ 
+                background: linear-gradient(135deg, #007acc 0%, #0056b3 100%);
+                color: white;
+                padding: 4rem 0;
+            }}
+            
+            .feature-card {{
+                height: 100%;
+                border: 2px solid transparent;
+            }}
+            
+            /* Respect reduced motion preferences */
+            @media (prefers-reduced-motion: no-preference) {{
+                .feature-card {{
+                    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+                }}
+                .feature-card:hover {{
+                    transform: translateY(-5px);
+                    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+                }}
+            }}
+            
+            /* Enhanced focus indicators */
+            .feature-card:focus-within {{
+                border-color: #0d6efd;
+                outline: 3px solid #0d6efd;
+                outline-offset: 2px;
+            }}
+            
+            .btn:focus {{
+                box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+            }}
+            
+            .stat-card {{
+                background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+                color: white;
+            }}
+            
+            /* Ensure sufficient contrast for text on gradients */
+            .stat-card .card-body {{
+                background: rgba(0, 0, 0, 0.1);
+                border-radius: 0.375rem;
+            }}
+            
+            /* High contrast mode support */
+            @media (prefers-contrast: high) {{
+                .hero-section {{
+                    background: #000;
+                    border: 2px solid #fff;
+                }}
+                .feature-card {{
+                    border: 2px solid #000;
+                }}
+                .stat-card {{
+                    background: #000;
+                    border: 2px solid #fff;
+                }}
+            }}
+            
+            /* Screen reader only text */
+            .visually-hidden-focusable:not(:focus):not(:focus-within) {{
+                position: absolute !important;
+                width: 1px !important;
+                height: 1px !important;
+                padding: 0 !important;
+                margin: -1px !important;
+                overflow: hidden !important;
+                clip: rect(0, 0, 0, 0) !important;
+                white-space: nowrap !important;
+                border: 0 !important;
+            }}
+        </style>
     </head>
-    <body>
-        <tt>
-            <h1>Visual Studio Code - Offline Gallery and Updater</h1>            
-            <a href="/browse?path=installers">Browse Binaries</a> | 
-            <a href="/browse?path=extensions">Browse Extensions</a>
-            <br />
-            <br />
-            <br />
-            <small>https://github.com/LOLINTERNETZ/vscodeoffline/ | https://hub.docker.com/u/lolinternet</small>
-        </tt>
+    <body class="bg-light">
+        <!-- Skip navigation for keyboard users -->
+        <a href="#main-content" class="skip-link visually-hidden-focusable">Skip to main content</a>
+        
+        <!-- Hero Section -->
+        <header class="hero-section" role="banner">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h1 class="display-4 fw-bold mb-3">
+                            <i class="bi bi-code-square me-3" aria-hidden="true"></i>
+                            Offline VSCode Gallery
+                        </h1>
+                        <p class="lead mb-4">
+                            Welcome to the Offline Visual Studio Code extension gallery and binary updater.
+                        </p>
+                    </div>
+                    <div class="col-lg-4 text-center" aria-hidden="true">
+                        <i class="bi bi-cloud-download display-1 opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main id="main-content" class="container my-5">
+            <!-- Quick Access Cards -->
+            <section class="row mb-5" aria-labelledby="quick-access-heading">
+                <div class="col-12 mb-4">
+                    <h2 id="quick-access-heading" class="visually-hidden">Quick Access</h2>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <article class="card feature-card border-0 shadow h-100" 
+                             role="region" 
+                             aria-labelledby="binaries-title">
+                        <div class="card-body text-center p-4 d-flex flex-column">
+                            <div class="mb-3" aria-hidden="true">
+                                <i class="bi bi-download display-4 text-primary"></i>
+                            </div>
+                            <h3 id="binaries-title" class="card-title h4">VS Code Binaries</h3>
+                            <p class="card-text text-muted flex-grow-1">
+                                Browse and manually download Visual Studio Code installers for different platforms and build qualities.
+                            </p>
+                            <a href="/browse?path=installers" 
+                               class="btn btn-primary btn-lg mt-auto"
+                               aria-describedby="binaries-desc">
+                                <i class="bi bi-folder2-open me-2" aria-hidden="true"></i>
+                                Browse Binaries
+                            </a>
+                            <span id="binaries-desc" class="visually-hidden">
+                                Access VS Code installer files for Windows, Mac, and Linux
+                            </span>
+                        </div>
+                    </article>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <article class="card feature-card border-0 shadow h-100" 
+                             role="region" 
+                             aria-labelledby="extensions-title">
+                        <div class="card-body text-center p-4 d-flex flex-column">
+                            <div class="mb-3" aria-hidden="true">
+                                <i class="bi bi-puzzle display-4 text-success"></i>
+                            </div>
+                            <h3 id="extensions-title" class="card-title h4">Extensions Library</h3>
+                            <p class="card-text text-muted flex-grow-1">
+                                Access the complete offline MS VS Code extension repository with search support.
+                            </p>
+                            <a href="/browse?path=extensions" 
+                               class="btn btn-success btn-lg mt-auto"
+                               aria-describedby="extensions-desc">
+                                <i class="bi bi-grid-3x3-gap me-2" aria-hidden="true"></i>
+                                Browse Extensions
+                            </a>
+                            <span id="extensions-desc" class="visually-hidden">
+                                Browse thousands of VS Code extensions with search and filtering
+                            </span>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- Server Statistics -->
+            <section class="row mb-5" aria-labelledby="server-info-heading">
+                <div class="col-12">
+                    <article class="card stat-card border-0 shadow" 
+                             role="region" 
+                             aria-labelledby="server-info-title">
+                        <div class="card-body p-4">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <h3 id="server-info-title" class="card-title mb-2 h5">
+                                        <i class="bi bi-server me-2" aria-hidden="true"></i>
+                                        Server Information
+                                    </h3>
+                                    <p class="card-text mb-0">
+                                        Monitor extension loading progress, cache status, and server performance in real-time.
+                                    </p>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <a href="/status" 
+                                       class="btn btn-light btn-lg"
+                                       aria-describedby="status-detail-desc">
+                                        <i class="bi bi-activity me-2" aria-hidden="true"></i>
+                                        View Status
+                                    </a>
+                                    <span id="status-detail-desc" class="visually-hidden">
+                                        View detailed server statistics and performance metrics
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+        </main>
+        <script src="{BOOTSTRAP_JS_URL}"></script>
     </body>
 </html>

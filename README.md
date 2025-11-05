@@ -21,8 +21,64 @@ On the non-Internet connected system, **vscgallery**:
 - Implements the malicious extension list;
 - Implements initial support for multiple versions;
 - Supports extension search (name, author and short description) and sorting;
-- Supports custom/private extensions (follow the structure of a mirrored extension); and
-- Supports Remote Development.
+- Supports custom/private extensions (follow the structure of a mirrored extension);
+- Supports Remote Development;
+- **NEW**: Real-time status dashboard with system metrics and extension statistics;
+- **NEW**: Enhanced web interface with responsive design and accessibility features;
+- **NEW**: Environment-configurable CDN URLs for Bootstrap assets (dev/prod flexibility);
+- **NEW**: Optimized Docker images with reduced dependencies and Python 3.12 support;
+- **NEW**: Intelligent caching system for improved performance and reduced filesystem access;
+- **NEW**: Comprehensive error handling and logging throughout the application.
+
+## Recent Improvements (v2.3.6-beta)
+
+### Status Dashboard
+- **Real-time monitoring**: Live status page at `/status` showing system health, extension counts, and cache information
+- **System metrics**: Displays uptime, loaded extensions, total versions, unique publishers, and cache status
+- **Cache monitoring**: Real-time cache statistics including size, age, hit rates, and automatic refresh status
+- **Auto-refresh**: Updates every 30 seconds to provide current information
+- **Responsive design**: Mobile-friendly interface with Bootstrap 5.3.3
+
+### Enhanced Web Interface  
+- **Modern UI**: Updated all HTML templates with improved accessibility and responsive design
+- **Directory browser**: Enhanced file browsing interface with search, pagination, and keyboard navigation
+- **Status indicators**: Visual feedback for system health and operational status
+
+### Technical Improvements
+- **Python 3.12 compatibility**: Removed deprecated `distutils` dependencies, replaced with modern alternatives
+- **Optimized Docker images**: Reduced container size by removing unused dependencies (psutil, setuptools, pytimeparse)
+- **Environment-aware CDN**: Configurable Bootstrap CDN URLs via `USE_LOCAL_CDN` and `CDN_BASE_URL` environment variables
+- **Template system**: Unified template processing across all HTML pages with proper error handling
+- **Intelligent caching**: Multi-layered caching system for extension metadata and filesystem operations
+  - Compressed JSON caching with gzip for reduced storage and faster I/O
+  - File system monitoring with automatic cache invalidation
+  - Configurable cache storage location and refresh intervals
+  - Persistent cache across container restarts and deployments
+
+### ⚡ Performance & Caching
+- **Extension cache**: Compressed JSON cache for faster extension listing and search operations
+- **Configurable storage**: Set custom cache location via `CACHE_STORE` environment variable
+- **File monitoring**: Automatic cache invalidation when extension files change
+- **Reduced I/O**: Significant reduction in filesystem operations through intelligent caching
+- **Cache statistics**: Monitor cache performance through the `/status` dashboard
+- **Background refresh**: Automatic cache updates without blocking user requests
+- **Persistent storage**: Cache survives container restarts when using external storage volumes
+
+### 🔧 Configuration Options
+```bash
+# Use local CDN instead of public CDN
+USE_LOCAL_CDN=true
+CDN_BASE_URL=http://your-local-cdn.com
+
+# Content and artifacts paths (for development)
+CONTENT=/path/to/content
+ARTIFACTS=/path/to/artifacts
+
+# Cache configuration (optional)
+CACHE_STORE=/path/to/cache    # Cache storage location (default: artifacts directory)
+CACHE_REFRESH_INTERVAL=3600  # Cache refresh interval in seconds
+CACHE_MAX_SIZE=100MB         # Maximum cache size
+```
 
 Possible TODO List:
 
@@ -80,9 +136,11 @@ On the non-Internet connected system:
 
    `docker-compose up vscgallery`
 
-4. Using Chrome/Firefox navigate to <https://update.code.visualstudio.com>. You should not see any certificate warnings, if you do it's unlikely to work in VS Code.
+5. Using Chrome/Firefox navigate to <https://update.code.visualstudio.com>. You should not see any certificate warnings, if you do it's unlikely to work in VS Code.
 
-5. Open VS Code, hopefully you can magically install extensions and update the install. The Help > Developer Tools > Network should tell you what is going on.
+6. **NEW**: Access the status dashboard at `https://update.code.visualstudio.com/status` to monitor system health and view extension statistics.
+
+7. Open VS Code, hopefully you can magically install extensions and update the install. The Help > Developer Tools > Network should tell you what is going on.
 
 Note: Chrome, rather than other browsers, will likely give you a better indication as to what is going on as VS Code and Chrome share the same certificate trust.
 
@@ -112,7 +170,9 @@ This guide will setup the vscsync and vscgallery service on the same Docker host
 
 5. Using Chrome navigate to https://update.code.visualstudio.com. You should not see any certificate warnings, if you do it's unlikely to work in VS Code.
 
-6. Open VS Code, hopefully you can magically install extensions and update the install. The Help > Developer Tools > Network should tell you what is going on.
+6. **NEW**: Monitor your installation at `https://update.code.visualstudio.com/status` for real-time system metrics and extension statistics.
+
+7. Open VS Code, hopefully you can magically install extensions and update the install. The Help > Developer Tools > Network should tell you what is going on.
 
 ## Sync Arguments (vscsync)
 

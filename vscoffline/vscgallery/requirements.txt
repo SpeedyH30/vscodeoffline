@@ -2,4 +2,4 @@ requests
 falcon
 gunicorn
 watchdog
-setuptools
+packaging

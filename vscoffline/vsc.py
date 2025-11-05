@@ -18,11 +18,12 @@ URL_MARKETPLACEQUERY = r"https://marketplace.visualstudio.com/_apis/public/galle
 URL_MALICIOUS = r"https://main.vscode-cdn.net/extensions/marketplace.json"
 
 URLROOT = "https://update.code.visualstudio.com"
-ARTIFACTS = "/artifacts/"
-ARTIFACTS_INSTALLERS = "/artifacts/installers"
-ARTIFACTS_EXTENSIONS = "/artifacts/extensions"
-ARTIFACT_RECOMMENDATION = "/artifacts/recommendations.json"
-ARTIFACT_MALICIOUS = "/artifacts/malicious.json"
+ARTIFACTS = os.environ.get('ARTIFACTS', '/artifacts/')
+ARTIFACTS_INSTALLERS = os.path.join(ARTIFACTS, 'installers')
+ARTIFACTS_EXTENSIONS = os.path.join(ARTIFACTS, 'extensions')
+ARTIFACT_RECOMMENDATION = os.path.join(ARTIFACTS, 'recommendations.json')
+ARTIFACT_MALICIOUS = os.path.join(ARTIFACTS, 'malicious.json')
+CONTENT = os.environ.get('CONTENT', '/opt/vscoffline/vscgallery/content')
 
 TIMEOUT = 12
 
@@ -157,16 +158,40 @@ class Utility:
         return str(results[0].absolute())
 
     @staticmethod
-    def folders_in_folder(filepath: str) -> List[str]:
-        listing = [f for f in os.listdir(filepath) if os.path.isdir(os.path.join(filepath, f))]
-        listing.sort()
-        return listing
+    def folders_in_folder(filepath: str, limit: int = None) -> List[str]:
+        # Use scandir for better performance with large directories
+        try:
+            folders = []
+            count = 0
+            with os.scandir(filepath) as entries:
+                for entry in entries:
+                    if entry.is_dir(follow_symlinks=False):
+                        folders.append(entry.name)
+                        count += 1
+                        if limit and count >= limit:
+                            break
+            folders.sort()
+            return folders
+        except OSError:
+            return []
 
     @staticmethod
-    def files_in_folder(filepath: str) -> List[str]:
-        listing = [f for f in os.listdir(filepath) if os.path.isfile(os.path.join(filepath, f))]
-        listing.sort()
-        return listing
+    def files_in_folder(filepath: str, limit: int = None) -> List[str]:
+        # Use scandir for better performance with large directories
+        try:
+            files = []
+            count = 0
+            with os.scandir(filepath) as entries:
+                for entry in entries:
+                    if entry.is_file(follow_symlinks=False):
+                        files.append(entry.name)
+                        count += 1
+                        if limit and count >= limit:
+                            break
+            files.sort()
+            return files
+        except OSError:
+            return []
 
 
     @staticmethod
