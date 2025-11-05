@@ -45,6 +45,7 @@ jobs:
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
           type=semver,pattern={{major}}
+          type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
 
     - name: Extract metadata for vscgallery
@@ -58,12 +59,14 @@ jobs:
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
           type=semver,pattern={{major}}
+          type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
 
     - name: Build and push vscsync image
       uses: docker/build-push-action@v5
       with:
-        context: ./vscoffline/vscsync
+        context: .
+        file: ./vscoffline/vscsync/Dockerfile
         platforms: linux/amd64,linux/arm64
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta-vscsync.outputs.tags }}
@@ -74,13 +77,29 @@ jobs:
     - name: Build and push vscgallery image
       uses: docker/build-push-action@v5
       with:
-        context: ./vscoffline/vscgallery
+        context: .
+        file: ./vscoffline/vscgallery/Dockerfile
         platforms: linux/amd64,linux/arm64
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta-vscgallery.outputs.tags }}
         labels: ${{ steps.meta-vscgallery.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+
+    - name: Update docker-compose.yml for releases
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        # Extract version from tag (remove 'v' prefix)
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "Updating docker-compose.yml with version: $VERSION"
+        
+        # Update image tags in docker-compose.yml
+        sed -i "s|ghcr.io/${{ github.repository }}/vscsync:.*|ghcr.io/${{ github.repository }}/vscsync:$VERSION|g" docker-compose.yml
+        sed -i "s|ghcr.io/${{ github.repository }}/vscgallery:.*|ghcr.io/${{ github.repository }}/vscgallery:$VERSION|g" docker-compose.yml
+        
+        # Show the changes
+        echo "Updated docker-compose.yml:"
+        grep "image:" docker-compose.yml
 
     - name: Image build summary
       if: github.event_name != 'pull_request'
@@ -92,3 +111,9 @@ jobs:
         echo "🔗 Images available at:"
         echo "   https://github.com/${{ github.repository }}/pkgs/container/vscsync"
         echo "   https://github.com/${{ github.repository }}/pkgs/container/vscgallery"
+        echo ""
+        if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "🏷️  Tagged release: v$VERSION"
+          echo "   Recommended usage: ghcr.io/${{ github.repository }}/vscsync:$VERSION"
+        fi
