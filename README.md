@@ -30,54 +30,46 @@ On the non-Internet connected system, **vscgallery**:
 - **NEW**: Intelligent caching system for improved performance and reduced filesystem access;
 - **NEW**: Comprehensive error handling and logging throughout the application.
 
-## Recent Improvements (v2.0.0)
+## Version 2.0.0 Major Release
 
-### Status Dashboard
-- **Real-time monitoring**: Live status page at `/status` showing system health, extension counts, and cache information
-- **System metrics**: Displays uptime, loaded extensions, total versions, unique publishers, and cache status
-- **Cache monitoring**: Real-time cache statistics including size, age, hit rates, and automatic refresh status
-- **Auto-refresh**: Updates every 30 seconds to provide current information
-- **Responsive design**: Mobile-friendly interface with Bootstrap 5.3.3
+### Microsoft API Modernization
+- Complete session management overhaul with enhanced retry logic and error handling
+- Exponential backoff with jitter for Microsoft API rate limiting (429 errors)
+- Modern request headers and authentication for improved API compatibility
+- Resilient connection pooling and timeout management
 
-### Enhanced Web Interface  
-- **Modern UI**: Updated all HTML templates with improved accessibility and responsive design
-- **Directory browser**: Enhanced file browsing interface with search, pagination, and keyboard navigation
-- **Status indicators**: Visual feedback for system health and operational status
+### Expanded Platform Support
+- Increased from 11 to 29 comprehensive VS Code platforms
+- Full Windows ARM64, Linux variants, and macOS Intel/Apple Silicon support
+- Added VS Code Server platforms for Remote Development scenarios
+- Included VS Code CLI platforms for command-line usage
+- Advanced platform filtering with include/exclude options
 
-### Technical Improvements
-- **Python 3.12 compatibility**: Removed deprecated `distutils` dependencies, replaced with modern alternatives
-- **Optimized Docker images**: Reduced container size by removing unused dependencies (psutil, setuptools, pytimeparse)
-- **Environment-aware CDN**: Configurable Bootstrap CDN URLs via `USE_LOCAL_CDN` and `CDN_BASE_URL` environment variables
-- **Template system**: Unified template processing across all HTML pages with proper error handling
-- **Intelligent caching**: Multi-layered caching system for extension metadata and filesystem operations
-  - Compressed JSON caching with gzip for reduced storage and faster I/O
-  - File system monitoring with automatic cache invalidation
-  - Configurable cache storage location and refresh intervals
-  - Persistent cache across container restarts and deployments
+### Container Optimization
+- Multi-stage Docker builds reducing image sizes by approximately 50% to 95-113MB
+- Alpine Linux base images with optimized dependency management
+- Enhanced DNS resolution and networking configuration for containerized environments
+- Proper artifacts directory path handling for container compatibility
 
-### ⚡ Performance & Caching
-- **Extension cache**: Compressed JSON cache for faster extension listing and search operations
-- **Configurable storage**: Set custom cache location via `CACHE_STORE` environment variable
-- **File monitoring**: Automatic cache invalidation when extension files change
-- **Reduced I/O**: Significant reduction in filesystem operations through intelligent caching
-- **Cache statistics**: Monitor cache performance through the `/status` dashboard
-- **Background refresh**: Automatic cache updates without blocking user requests
-- **Persistent storage**: Cache survives container restarts when using external storage volumes
+### Modern VS Code Feature Support
+- AI/Chat endpoint compatibility for modern VS Code features
+- CDN endpoint support for web-based VS Code components
+- Enhanced marketplace API compatibility with current Microsoft infrastructure
+- Updated extension handling for platform-specific variants
 
-### 🔧 Configuration Options
+### Configuration Options
 ```bash
-# Use local CDN instead of public CDN
-USE_LOCAL_CDN=true
-CDN_BASE_URL=http://your-local-cdn.com
+# Container networking (recommended for DNS resolution)
+network_mode: host
 
-# Content and artifacts paths (for development)
+# Platform filtering examples
+SYNCARGS=--sync --platforms darwin,win32 --include-server
+SYNCARGS=--syncall --exclude-platforms arm64,armhf
+SYNCARGS=--sync --include-cli --total-recommended 100
+
+# Content and artifacts paths
 CONTENT=/path/to/content
 ARTIFACTS=/path/to/artifacts
-
-# Cache configuration (optional)
-CACHE_STORE=/path/to/cache    # Cache storage location (default: artifacts directory)
-CACHE_REFRESH_INTERVAL=3600  # Cache refresh interval in seconds
-CACHE_MAX_SIZE=100MB         # Maximum cache size
 ```
 
 Possible TODO List:
@@ -190,28 +182,29 @@ These arguments can be passed as command line arguments to sync.py (e.g. --varA 
 usage: sync.py [-h] [--sync] [--syncall] [--artifacts ARTIFACTDIR]
                [--frequency FREQUENCY] [--check-binaries] [--check-insider]
                [--check-recommended-extensions] [--check-specified-extensions]
-               [--extension-name EXTENSIONNAME]
-               [--extension-search EXTENSIONSEARCH] [--update-binaries]
-               [--update-extensions] [--update-malicious-extensions]
-               [--prerelease-extensions] [--vscode-version VSCODEVERSION]
-               [--skip-binaries] [--debug] [--logfile LOGFILE]
+               [--extension-name EXTENSIONNAME] [--extension-search EXTENSIONSEARCH]
+               [--prerelease-extensions] [--update-binaries] [--update-extensions]
+               [--update-malicious-extensions] [--skip-binaries]
+               [--vscode-version VERSION] [--total-recommended TOTALRECOMMENDED]
+               [--debug] [--logfile LOGFILE] [--platforms PLATFORMS] [--include-server]
+               [--include-cli] [--include-arm] [--exclude-platforms EXCLUDEPLATFORMS]
+               [--list-platforms]
 
-Synchronises VSCode in an Offline Environment
+Synchronizes VSCode in an Offline Environment
 
-optional arguments:
-  -h, --help            show this help message and exit
-  --sync                The basic-user sync. It includes stable binaries and
-                        typical extensions
-  --syncall             The power-user sync. It includes all binaries and
-                        extensions
+Main Operations:
+  --sync                The basic-user sync. Includes stable binaries and typical extensions
+  --syncall             The power-user sync. Includes all binaries and extensions
+
+Configuration:
   --artifacts ARTIFACTDIR
-                        Path to downloaded artifacts
+                        Path to downloaded artifacts (default: /artifacts/)
   --frequency FREQUENCY
-                        The frequency to try and update (e.g. sleep for '12h'
-                        and try again
-  --total-recommended N
-                        The number of recommended extensions to fetch
-                        (default: 200)
+                        The frequency to try and update (e.g. sleep for '12h' and try again)
+  --total-recommended TOTALRECOMMENDED
+                        Total number of recommended extensions to sync from Search API (default: 500)
+
+Content Selection:
   --check-binaries      Check for updated binaries
   --check-insider       Check for updated insider binaries
   --check-recommended-extensions
@@ -222,16 +215,68 @@ optional arguments:
                         Find a specific extension by name
   --extension-search EXTENSIONSEARCH
                         Search for a set of extensions
+  --prerelease-extensions
+                        Download prerelease extensions. Defaults to false
+  --vscode-version VERSION
+                        VSCode version to search extensions as
+
+Actions:
   --update-binaries     Download binaries
   --update-extensions   Download extensions
   --update-malicious-extensions
                         Update the malicious extension list
-  --prerelease-extensions
-                        Download prerelease extensions. Defaults to false.
-  --vscode-version
-                        VSCode version to search extensions as.
   --skip-binaries       Skip downloading binaries
+
+Platform Filtering (New in v2.0.0):
+  --platforms PLATFORMS
+                        Comma-separated list of platforms to sync (e.g., "win32,linux,darwin")
+  --include-server      Include VS Code Server platforms for Remote Development
+  --include-cli         Include VS Code CLI platforms
+  --include-arm         Include ARM-based platforms (ARM64, ARMHF)
+  --exclude-platforms EXCLUDEPLATFORMS
+                        Comma-separated list of platforms to exclude
+  --list-platforms      List all available platforms and exit
+
+Debugging:
   --debug               Show debug output
-  --logfile LOGFILE     Sets a logfile to store loggging output
+  --logfile LOGFILE     Sets a logfile to store logging output
+```
+
+## Supported Platforms (v2.0.0)
+
+VSCodeOffline now supports 29 comprehensive VS Code platforms:
+
+### Desktop Platforms
+- **Windows**: win32, win32-x64, win32-arm64
+- **Linux**: linux, linux-x64, linux-arm64, linux-armhf, linux-deb, linux-rpm, linux-snap  
+- **macOS**: darwin, darwin-x64, darwin-arm64, darwin-universal
+
+### Server Platforms (Remote Development)
+- **Linux Server**: server-linux, server-linux-x64, server-linux-arm64, server-linux-armhf
+- **macOS Server**: server-darwin, server-darwin-x64, server-darwin-arm64
+- **Windows Server**: server-win32, server-win32-x64, server-win32-arm64
+
+### CLI Platforms
+- **Linux CLI**: cli-linux, cli-linux-x64, cli-linux-arm64, cli-alpine
+- **macOS CLI**: cli-darwin, cli-darwin-x64, cli-darwin-arm64
+- **Windows CLI**: cli-win32, cli-win32-x64, cli-win32-arm64
+
+### Platform Filtering Examples
+
+```bash
+# Sync only macOS platforms
+--platforms darwin,darwin-x64,darwin-arm64
+
+# Sync Windows and Linux, exclude ARM variants
+--platforms win32,linux --exclude-platforms arm64,armhf
+
+# Include server and CLI platforms for comprehensive coverage
+--include-server --include-cli
+
+# Sync everything except ARM platforms
+--include-server --include-cli --exclude-platforms arm64,armhf
+
+# List all available platforms
+--list-platforms
 ```
 

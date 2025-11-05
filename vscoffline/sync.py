@@ -10,12 +10,14 @@ import logging
 import json
 import time
 import datetime
+import random
 from typing import List
 from platform import release
 import logging as log
 from pytimeparse.timeparse import timeparse
 import vsc
 from requests.adapters import HTTPAdapter, Retry
+from urllib3.util.retry import Retry as URLLibRetry
 
 
 class VSCUpdateDefinition(object):
@@ -61,8 +63,9 @@ class VSCUpdateDefinition(object):
 
     def check_for_update(self, old_commit_id=None):
         if not old_commit_id:
-            # To trigger the API to delta
-            old_commit_id = '7c4205b5c6e52a53b81c69d2b2dc8a627abaa0ba'
+            # Use a much older commit to force the API to return the latest version
+            # This is from VS Code 1.60 (September 2021) - old enough to trigger updates
+            old_commit_id = '379476f0e13988d90fab105c5c19e7abc8b1ddd8'
 
         url = vsc.URL_BINUPDATES + \
             f"{self.identity}/{self.quality}/{old_commit_id}"
@@ -334,25 +337,83 @@ class VSCExtensionDefinition(object):
 class VSCUpdates(object):
 
     @staticmethod
-    def latest_versions(insider=False):
+    def filter_platforms(config):
+        """Filter platforms based on user configuration"""
+        platforms = vsc.PLATFORMS.copy()
+        
+        # Apply explicit platform list if provided
+        if hasattr(config, 'platforms') and config.platforms:
+            requested_platforms = [p.strip() for p in config.platforms.split(',')]
+            platforms = [p for p in platforms if any(p.startswith(req) or req in p for req in requested_platforms)]
+        
+        # Apply exclusions
+        if hasattr(config, 'excludeplatforms') and config.excludeplatforms:
+            excluded_platforms = [p.strip() for p in config.excludeplatforms.split(',')]
+            platforms = [p for p in platforms if not any(p.startswith(exc) or exc in p for exc in excluded_platforms)]
+        
+        # Apply include/exclude filters
+        if hasattr(config, 'includeserver') and not config.includeserver:
+            platforms = [p for p in platforms if not p.startswith('server-')]
+        
+        if hasattr(config, 'includecli') and not config.includecli:
+            platforms = [p for p in platforms if not p.startswith('cli-')]
+        
+        if hasattr(config, 'includearm') and not config.includearm:
+            platforms = [p for p in platforms if not any(arch in p for arch in ['arm64', 'armhf'])]
+        
+        log.info(f"Syncing {len(platforms)} platforms: {', '.join(platforms)}")
+        return platforms
+
+    @staticmethod
+    def latest_versions(insider=False, config=None):
         versions = {}
-        for platform in vsc.PLATFORMS:
+        
+        # Get filtered platform list
+        platforms_to_check = VSCUpdates.filter_platforms(config) if config else vsc.PLATFORMS
+        
+        # Smart platform validation - handle both old and new platform definitions
+        def is_valid_combination(platform, architecture, buildtype):
+            # Skip combinations that don't make sense
+            if platform == 'win32' and architecture == 'ia32':
+                return False
+                
+            # For new platform definitions that include architecture, skip additional arch
+            if '-' in platform:  # e.g., win32-x64, darwin-arm64, cli-linux-x64
+                if architecture != '':  # Already has architecture in platform name
+                    return False
+                    
+            # Legacy platform compatibility
+            if platform == 'darwin' and (architecture not in ['', 'x64', 'arm64'] or buildtype not in ['', 'archive']):
+                return False
+            if platform in ['linux', 'linux-deb', 'linux-rpm'] and architecture == '':
+                return False
+                
+            # Server and CLI platforms should not have separate buildtypes in most cases
+            if platform.startswith(('server-', 'cli-')) and buildtype not in ['', 'archive']:
+                return False
+                
+            return True
+        
+        for platform in platforms_to_check:
             for architecture in vsc.ARCHITECTURES:
                 for buildtype in vsc.BUILDTYPES:
                     for quality in vsc.QUALITIES:
                         if quality == 'insider' and not insider:
                             continue
-                        if platform == 'win32' and architecture == 'ia32':
+                            
+                        if not is_valid_combination(platform, architecture, buildtype):
                             continue
-                        if platform == 'darwin' and (architecture != '' or buildtype != ''):
+                            
+                        try:
+                            ver = VSCUpdateDefinition(
+                                platform, architecture, buildtype, quality)
+                            ver.check_for_update()
+                            log.info(ver)
+                            versions[f'{ver.identity}-{ver.quality}'] = ver
+                        except Exception as e:
+                            log.debug(f"Failed to check update for {platform}-{architecture}-{buildtype}-{quality}: {e}")
                             continue
-                        if 'linux' in platform and (architecture == '' or buildtype != ''):
-                            continue
-                        ver = VSCUpdateDefinition(
-                            platform, architecture, buildtype, quality)
-                        ver.check_for_update()
-                        log.info(ver)
-                        versions[f'{ver.identity}-{ver.quality}'] = ver
+                            
         return versions
 
     @staticmethod
@@ -364,6 +425,75 @@ class VSCUpdates(object):
         with open(signalpath, 'w') as outfile:
             json.dump(result, outfile, cls=vsc.MagicJsonEncoder, indent=4)
 
+
+def create_resilient_session():
+    """Create a requests session with enhanced retry logic and error handling."""
+    session = requests.Session()
+    
+    # Configure retry strategy for enhanced reliability
+    retry_strategy = URLLibRetry(
+        total=5,
+        status_forcelist=[429, 500, 502, 503, 504, 520, 521, 522, 523, 524],
+        method_whitelist=["HEAD", "GET", "OPTIONS", "POST"],
+        backoff_factor=2,
+        respect_retry_after_header=True
+    )
+    
+    adapter = HTTPAdapter(
+        max_retries=retry_strategy,
+        pool_connections=10,
+        pool_maxsize=20,
+        pool_block=True
+    )
+    
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    
+    # Set modern headers for Microsoft API compatibility
+    session.headers.update({
+        'User-Agent': 'VSCode/1.105.1 (VSCodeOffline/2.0.0)',
+        'Accept': 'application/json;api-version=6.0-preview.1',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive'
+    })
+    
+    return session
+
+def resilient_request(session, method, url, max_retries=5, base_delay=1, max_delay=60, **kwargs):
+    """Enhanced request method with exponential backoff and jitter."""
+    for attempt in range(max_retries):
+        try:
+            response = session.request(method, url, timeout=30, **kwargs)
+            
+            # Handle rate limiting specifically
+            if response.status_code == 429:
+                retry_after = response.headers.get('Retry-After')
+                if retry_after:
+                    delay = int(retry_after)
+                else:
+                    # Exponential backoff with jitter for 429 errors
+                    delay = min(base_delay * (2 ** attempt) + random.uniform(0, 1), max_delay)
+                
+                log.warning(f"Rate limited (429) on {url}, waiting {delay} seconds (attempt {attempt + 1}/{max_retries})")
+                time.sleep(delay)
+                continue
+            
+            # Return successful responses or client errors (4xx except 429)
+            if response.status_code < 500 or response.status_code == 429:
+                return response
+                
+        except (requests.RequestException, Exception) as e:
+            if attempt == max_retries - 1:
+                log.error(f"Request failed after {max_retries} attempts: {url} - {e}")
+                raise
+            
+            # Exponential backoff with jitter
+            delay = min(base_delay * (2 ** attempt) + random.uniform(0, 1), max_delay)
+            log.warning(f"Request attempt {attempt + 1} failed for {url}: {e}, retrying in {delay:.2f}s")
+            time.sleep(delay)
+    
+    # This should not be reached due to the raise above, but just in case
+    raise requests.RequestException(f"Failed to complete request to {url} after {max_retries} attempts")
 
 class VSCMarketplace(object):
 
@@ -655,7 +785,7 @@ if __name__ == '__main__':
     parser.add_argument('--syncall', dest='syncall', action='store_true',
                         help='The power-user sync. It includes all binaries and extensions ')
     parser.add_argument('--artifacts', dest='artifactdir',
-                        default='../artifacts/', help='Path to downloaded artifacts')
+                        default='/artifacts/', help='Path to downloaded artifacts')
     parser.add_argument('--frequency', dest='frequency', default=None,
                         help='The frequency to try and update (e.g. sleep for \'12h\' and try again')
 
@@ -690,7 +820,26 @@ if __name__ == '__main__':
                         action='store_true', help='Show debug output')
     parser.add_argument('--logfile', dest='logfile', default=None,
                         help='Sets a logfile to store loggging output')
+    parser.add_argument('--platforms', dest='platforms',
+                        help='Comma-separated list of platforms to sync (e.g., "win32,linux,darwin")')
+    parser.add_argument('--include-server', dest='includeserver', action='store_true', 
+                        help='Include VS Code Server platforms for Remote Development')
+    parser.add_argument('--include-cli', dest='includecli', action='store_true',
+                        help='Include VS Code CLI platforms')
+    parser.add_argument('--include-arm', dest='includearm', action='store_true',
+                        help='Include ARM-based platforms (ARM64, ARMHF)')
+    parser.add_argument('--exclude-platforms', dest='excludeplatforms',
+                        help='Comma-separated list of platforms to exclude')
+    parser.add_argument('--list-platforms', dest='listplatforms', action='store_true',
+                        help='List all available platforms and exit')
     config = parser.parse_args()
+
+    # Handle list-platforms option
+    if config.listplatforms:
+        print("Available VS Code platforms:")
+        for platform in vsc.PLATFORMS:
+            print(f"  {platform}")
+        sys.exit(0)
 
     if config.debug:
         loglevel = logging.DEBUG
@@ -754,7 +903,7 @@ if __name__ == '__main__':
 
         if config.checkbinaries and not config.skipbinaries:
             log.info('Syncing VS Code Update Versions')
-            versions = VSCUpdates.latest_versions(config.checkinsider)
+            versions = VSCUpdates.latest_versions(config.checkinsider, config)
 
         if config.updatebinaries and not config.skipbinaries:
             log.info('Syncing VS Code Binaries')

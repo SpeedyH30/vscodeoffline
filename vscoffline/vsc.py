@@ -7,7 +7,52 @@ from enum import IntFlag
 from typing import Any, Dict, List, Union
 import logging as log
 
-PLATFORMS = ["win32", "linux", "linux-deb", "linux-rpm", "darwin", "darwin-arm64", "darwin-universal", "linux-snap", "server-linux", "cli-alpine", "server-darwin"]
+# Enhanced platform definitions for complete VS Code coverage
+PLATFORMS = [
+    # Desktop Windows platforms
+    "win32",            # Standard Windows
+    "win32-x64",        # Windows 64-bit (specific arch)
+    "win32-arm64",      # Windows ARM64 (Surface Pro X, etc.)
+    
+    # Desktop Linux platforms  
+    "linux",            # Generic Linux
+    "linux-x64",        # Linux 64-bit
+    "linux-arm64",      # Linux ARM64 
+    "linux-armhf",      # Linux ARM 32-bit
+    "linux-deb",        # Debian packages
+    "linux-rpm",        # RPM packages
+    "linux-snap",       # Snap packages
+    
+    # Desktop macOS platforms
+    "darwin",           # macOS Intel (legacy)
+    "darwin-x64",       # macOS Intel 64-bit
+    "darwin-arm64",     # macOS Apple Silicon (M1/M2)
+    "darwin-universal", # macOS Universal (Intel + Apple Silicon)
+    
+    # VS Code Server platforms (Remote Development)
+    "server-linux",     # Server Linux
+    "server-linux-x64", # Server Linux 64-bit
+    "server-linux-arm64", # Server Linux ARM64
+    "server-linux-armhf", # Server Linux ARM 32-bit
+    "server-darwin",    # Server macOS
+    "server-darwin-x64", # Server macOS Intel
+    "server-darwin-arm64", # Server macOS Apple Silicon
+    "server-win32",     # Server Windows
+    "server-win32-x64", # Server Windows 64-bit
+    "server-win32-arm64", # Server Windows ARM64
+    
+    # VS Code CLI platforms
+    "cli-linux",        # CLI Linux
+    "cli-linux-x64",    # CLI Linux 64-bit
+    "cli-linux-arm64",  # CLI Linux ARM64
+    "cli-darwin",       # CLI macOS
+    "cli-darwin-x64",   # CLI macOS Intel
+    "cli-darwin-arm64", # CLI macOS Apple Silicon
+    "cli-win32",        # CLI Windows
+    "cli-win32-x64",    # CLI Windows 64-bit
+    "cli-win32-arm64",  # CLI Windows ARM64
+    "cli-alpine",       # CLI Alpine Linux
+]
 ARCHITECTURES = ["", "x64", "arm64", "armhf", "alpine"]
 BUILDTYPES = ["", "archive", "user", "web"]
 QUALITIES = ["stable", "insider"]

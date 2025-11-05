@@ -1,24 +1,22 @@
-version: '3'
 services:
 
   vscsync:
-    image: speedyh30/vscsync:latest
+    image: speedyh30/vscsync:2.0.0
     platform: linux/amd64
     build:
       context: ./
       dockerfile: ./vscoffline/vscsync/Dockerfile
       platforms:
         - linux/amd64
-    dns:
-      - 1.1.1.1
+    network_mode: host
     volumes:
       - ./artifacts/:/artifacts/
     environment:
       - SYNCARGS=--sync
       # Enable to sync all extensions
-      - SYNCARGS=--syncall
+      # - SYNCARGS=--syncall
       # Enable a logfile
-      - SYNCARGS=--sync --logfile /logs/sync.log
+      # - SYNCARGS=--sync --logfile /logs/sync.log
 
   vscgallery:
     image: speedyh30/vscgallery:2.0.0

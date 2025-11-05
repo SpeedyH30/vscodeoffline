@@ -1,5 +1,50 @@
 # Change Log for Visual Studio Code - Offline Gallery and Updater
 
+## [2.0.0] - 2025-11-05
+
+### Major Changes
+
+- Complete modernization for Microsoft API compatibility with enhanced session management and retry logic
+- Expanded platform support from 11 to 29 comprehensive platforms including Windows ARM64, Linux variants, macOS Intel/Apple Silicon, Server packages, and CLI tools
+- Added support for modern VS Code endpoints including AI/Chat features and CDN compatibility
+- Enhanced error handling with exponential backoff, jitter, and rate limiting for 429 errors
+- Updated Microsoft Update API integration with proper commit ID handling
+
+### Added
+
+- New platform filtering options: --include-server, --include-cli, --include-arm
+- Enhanced --platforms flag supporting comma-separated platform lists
+- --exclude-platforms option for granular platform control
+- VSCChat class for modern VS Code AI/Chat endpoint support
+- VSCUnpkg class for CDN compatibility and unpkg endpoint handling
+- Resilient request handling with automatic retry mechanisms
+- Support for 18 additional VS Code platforms covering comprehensive architecture matrix
+- New status monitoring pages with real-time sync status and health checks
+- Enhanced HTML interface with improved navigation and responsive design
+- Modern web UI with updated styling and better user experience
+- Status dashboard for monitoring sync operations and container health
+
+### Changed
+
+- Updated default artifacts directory path for container compatibility
+- Improved Docker networking configuration with host network mode for DNS resolution
+- Enhanced platform validation and smart combination filtering
+- Modernized session management with connection pooling and timeout handling
+- Optimized Docker builds using Alpine Linux base images with dependency isolation
+- Updated container environment configuration removing obsolete directives
+- Redesigned all HTML templates with modern CSS and responsive layout
+- Improved gallery browsing interface with better extension discovery
+- Enhanced status reporting with comprehensive metrics and health indicators
+- Streamlined web interface navigation and accessibility improvements
+
+### Fixed
+
+- Resolved DNS resolution issues in containerized environments
+- Fixed Microsoft Update API compatibility with proper version discovery
+- Corrected artifacts directory path resolution in Docker containers
+- Improved error handling for rate limiting and connection timeouts
+- Enhanced platform compatibility matrix validation
+
 ## [1.0.24] - 2023-06-05
 
 ### Fixed

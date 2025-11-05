@@ -913,6 +913,31 @@ class VSCCDNConfig(object):
         resp.text = json.dumps(cdn_config)
         resp.status = falcon.HTTP_200
 
+class VSCChat(object):
+    """VS Code AI/Chat configuration endpoint"""
+
+    def on_get(self, req, resp):
+        chat_config = {
+            "enabled": False,
+            "models": [],
+            "providers": [],
+            "notice": "AI/Chat features are not available in offline mode"
+        }
+        resp.media = chat_config
+        resp.status = falcon.HTTP_200
+
+class VSCUnpkg(object):
+    """Handle unpkg CDN requests for VS Code web components"""
+
+    def on_get(self, req, resp, path):
+        # In offline mode, we don't serve unpkg content but provide a meaningful response
+        resp.media = {
+            "error": "CDN content not available in offline mode",
+            "path": path,
+            "suggestion": "Use locally installed VS Code extensions instead"
+        }
+        resp.status = falcon.HTTP_404
+
 class VSCIndex(object):
 
     def __init__(self):
@@ -1304,6 +1329,11 @@ application.add_route('/status', VSCStatusPage(vsc.CONTENT, vsc_status))  # Main
 application.add_route('/status.json', vsc_status)  # JSON API endpoint
 application.add_route('/status-simple', VSCStatusSimple(vsc_status))  # Simple debug endpoint
 application.add_route('/cdn-config.json', VSCCDNConfig())  # CDN configuration endpoint
+
+# Modern VS Code endpoints for AI/Chat features and CDN compatibility
+application.add_route('/chat.json', VSCChat())
+application.add_route('/vscode-unpkg/{path:.*}', VSCUnpkg())
+
 application.add_route('/browse', VSCDirectoryBrowse(vsc.ARTIFACTS))
 application.add_route('/', VSCIndex())
 application.add_static_route('/artifacts/', vsc.ARTIFACTS)
