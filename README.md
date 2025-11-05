@@ -166,6 +166,68 @@ This guide will setup the vscsync and vscgallery service on the same Docker host
 
 7. Open VS Code, hopefully you can magically install extensions and update the install. The Help > Developer Tools > Network should tell you what is going on.
 
+## Getting Started - Kubernetes Deployment - Using Helm Chart
+
+For Kubernetes environments, VSCode Offline includes a comprehensive Helm chart for production-ready deployments.
+
+### Quick Kubernetes Deployment
+
+```bash
+# Clone repository
+git clone https://github.com/SpeedyH30/vscodeoffline.git
+cd vscodeoffline
+
+# Development deployment (minimal resources)
+kubectl create namespace vscode-offline
+helm install vscode-offline ./helm/vscode-offline \
+  -f ./helm/vscode-offline/examples/development.yaml \
+  --namespace vscode-offline
+
+# Access via port-forward
+kubectl port-forward -n vscode-offline service/vscode-offline-gallery 8080:8080
+# Visit: https://localhost:8080
+```
+
+### Production Kubernetes Features
+
+- **Automated Sync**: CronJob for scheduled extension and binary updates
+- **High Availability**: Multi-replica deployments with autoscaling and pod disruption budgets  
+- **Persistent Storage**: Configurable storage classes and sizes for artifacts and SSL certificates
+- **Ingress Support**: TLS termination with cert-manager integration
+- **Security**: Network policies, pod security contexts, and RBAC
+- **Monitoring**: Prometheus ServiceMonitor support for observability
+
+### Example Configurations
+
+```bash
+# Production with ingress and autoscaling
+helm install vscode-offline ./helm/vscode-offline \
+  -f ./helm/vscode-offline/examples/production.yaml \
+  --set vscgallery.ingress.hosts[0].host=vscode.yourdomain.com
+
+# Minimal deployment (gallery only, no sync)
+helm install vscode-offline ./helm/vscode-offline \
+  -f ./helm/vscode-offline/examples/minimal.yaml
+
+# Air-gapped environment (no external sync)
+helm install vscode-offline ./helm/vscode-offline \
+  --set vscsync.enabled=false \
+  --set persistence.artifacts.size=200Gi
+```
+
+### Helm Chart Management
+
+```bash
+# View available commands
+make helm-lint          # Validate chart syntax
+make helm-install-dev    # Install development configuration  
+make helm-upgrade        # Upgrade existing deployment
+make helm-uninstall     # Remove deployment
+make helm-port-forward  # Access service locally
+```
+
+For complete Kubernetes deployment documentation, see [KUBERNETES.md](KUBERNETES.md).
+
 ## Sync Arguments (vscsync)
 
 These arguments can be passed as command line arguments to sync.py (e.g. --varA or --varB), or passed via the Docker environment variable `SYNCARGS`.
