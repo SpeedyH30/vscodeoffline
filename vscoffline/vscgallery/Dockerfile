@@ -23,12 +23,18 @@ ENV WORKERS=4
 ENV THREADS=8
 ENV MAX_REQUESTS=1000
 ENV MAX_REQUESTS_JITTER=50
+ENV REFRESH_INTERVAL=3600
+ENV PYTHONUNBUFFERED=1
 ENV SSLARGS="--certfile=/opt/vscoffline/vscgallery/ssl/vscoffline.crt --keyfile=/opt/vscoffline/vscgallery/ssl/vscoffline.key"
 
 CMD gunicorn  \
     $SSLARGS \
     --bind $BIND \
     --access-logfile - \
+    --error-logfile - \
+    --log-level info \
+    --capture-output \
+    --enable-stdio-inheritance \
     --timeout $TIMEOUT \
     --workers $WORKERS \
     --threads $THREADS \

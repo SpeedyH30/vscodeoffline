@@ -9,6 +9,16 @@ from threading import Event, Thread, Lock
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import vsc
 
+# Configure logging for both direct execution and gunicorn
+log.basicConfig(
+    format='[%(levelname)s %(asctime)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    level=log.INFO,
+    force=True  # Override any existing configuration
+)
+# Ensure logs go to stdout
+log.getLogger().handlers[0].setStream(sys.stdout)
+
 
 class VSCUpdater(object):
 
@@ -109,6 +119,11 @@ class VSCGallery(object):
         self.loaded = Event()
         self.extensions_lock = Lock()
         self.start_time = time.time()
+        
+        # Refresh tracking
+        self.last_refresh_time = 0
+        self.next_refresh_time = time.time() + interval
+        self.refresh_lock = Lock()
         
         # Indexing status tracking
         self.indexing = Event()  # Set when actively indexing
@@ -355,9 +370,18 @@ class VSCGallery(object):
 
     def update_state_loop(self):
         while True:
+            log.info('🔍 Checking for new extensions...')
+            with self.refresh_lock:
+                self.next_refresh_time = time.time()
+            
             self.update_state()
             self.loaded.set()
-            log.info(f'Checking for updates in {vsc.Utility.seconds_to_human_time(self.interval)}')
+            
+            with self.refresh_lock:
+                self.last_refresh_time = time.time()
+                self.next_refresh_time = self.last_refresh_time + self.interval
+            
+            log.info(f'✅ Check complete. Next check in {vsc.Utility.seconds_to_human_time(self.interval)}')
             time.sleep(self.interval)
 
     def on_post(self, req, resp):
@@ -575,6 +599,24 @@ class VSCStatus(object):
             else:
                 estimated_total_versions = total_versions
             
+            # Get refresh timing information
+            refresh_info = {}
+            with self.gallery.refresh_lock:
+                last_refresh = self.gallery.last_refresh_time
+                next_refresh = self.gallery.next_refresh_time
+                
+                if last_refresh > 0:
+                    refresh_info['last_refresh_timestamp'] = int(last_refresh)
+                    refresh_info['last_refresh_ago_seconds'] = int(current_time - last_refresh)
+                    refresh_info['last_refresh_ago'] = vsc.Utility.seconds_to_human_time(int(current_time - last_refresh))
+                else:
+                    refresh_info['last_refresh'] = 'Never (startup in progress)'
+                
+                refresh_info['next_refresh_timestamp'] = int(next_refresh)
+                refresh_info['next_refresh_in_seconds'] = max(0, int(next_refresh - current_time))
+                refresh_info['next_refresh_in'] = vsc.Utility.seconds_to_human_time(max(0, int(next_refresh - current_time)))
+                refresh_info['is_checking_now'] = is_indexing
+            
             status = {
                 'status': 'indexing' if is_indexing else ('ready' if is_loaded else 'loading'),
                 'loading_complete': is_loaded,
@@ -583,6 +625,8 @@ class VSCStatus(object):
                 'timestamp': int(current_time),
                 'server_uptime_seconds': uptime_seconds,
                 'server_uptime_hours': round(uptime_seconds / 3600, 1),
+                
+                'refresh': refresh_info,
                 
                 'extensions': {
                     'loaded_count': extension_count,
@@ -596,7 +640,9 @@ class VSCStatus(object):
                 
                 'configuration': {
                     'cache_location': self.gallery.cache_file,
+                    'update_interval_seconds': self.gallery.interval,
                     'update_interval_hours': round(self.gallery.interval / 3600, 1),
+                    'update_interval': vsc.Utility.seconds_to_human_time(self.gallery.interval),
                     'artifacts_root': vsc.ARTIFACTS,
                     'url_root': vsc.URLROOT
                 }
@@ -742,6 +788,28 @@ class VSCStatusPage(object):
             # Last updated timestamp
             last_updated = time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())
             
+            # Refresh timing information
+            refresh_interval = vsc.Utility.seconds_to_human_time(self.vsc_status.gallery.interval)
+            last_refresh_text = "Never"
+            next_refresh_text = "Unknown"
+            refresh_status_color = "secondary"
+            
+            try:
+                with self.vsc_status.gallery.refresh_lock:
+                    if self.vsc_status.gallery.last_refresh_time > 0:
+                        last_refresh_ago = int(current_time - self.vsc_status.gallery.last_refresh_time)
+                        last_refresh_text = vsc.Utility.seconds_to_human_time(last_refresh_ago) + " ago"
+                        refresh_status_color = "success"
+                    
+                    next_refresh_in = max(0, int(self.vsc_status.gallery.next_refresh_time - current_time))
+                    next_refresh_text = vsc.Utility.seconds_to_human_time(next_refresh_in)
+                    
+                    if is_indexing:
+                        next_refresh_text = "Checking now..."
+                        refresh_status_color = "primary"
+            except Exception as e:
+                log.warning(f"Error getting refresh timing: {e}")
+            
             # CDN URLs - configurable for dev/prod environments
             # Check if running in container or if local CDN files should be used
             use_local_cdn = os.environ.get('USE_LOCAL_CDN', 'false').lower() == 'true'
@@ -775,6 +843,10 @@ class VSCStatusPage(object):
                 'CACHE_AGE_HOURS': str(cache_age_hours),
                 'CATEGORIES_LIST': str(categories_list),
                 'LAST_UPDATED': str(last_updated),
+                'REFRESH_INTERVAL': str(refresh_interval),
+                'LAST_REFRESH': str(last_refresh_text),
+                'NEXT_REFRESH': str(next_refresh_text),
+                'REFRESH_STATUS_COLOR': str(refresh_status_color),
                 'BOOTSTRAP_CSS_URL': str(bootstrap_css_url),
                 'BOOTSTRAP_ICONS_URL': str(bootstrap_icons_url),
                 'BOOTSTRAP_JS_URL': str(bootstrap_js_url)
@@ -1308,7 +1380,11 @@ if not os.path.exists(vsc.ARTIFACTS_EXTENSIONS):
     log.warning(f'Extensions artifact directory missing {vsc.ARTIFACTS_EXTENSIONS}. Cannot proceed.')
     sys.exit(-1)
 
-vscgallery = VSCGallery()
+# Get refresh interval from environment variable (default 3600 seconds = 1 hour)
+refresh_interval = int(os.environ.get('REFRESH_INTERVAL', '3600'))
+log.info(f'Extension refresh interval: {vsc.Utility.seconds_to_human_time(refresh_interval)}')
+
+vscgallery = VSCGallery(interval=refresh_interval)
 
 log.info('Extension gallery is loading in the background - server starting immediately...')
 log.info('Check /status endpoint for loading progress')

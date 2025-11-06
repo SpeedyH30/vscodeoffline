@@ -213,6 +213,36 @@
             <div class="col-md-4 mb-4">
                 <article class="card feature-card border-0 shadow h-100" 
                          role="region" 
+                         aria-labelledby="refresh-title">
+                    <div class="card-body text-center p-4 d-flex flex-column">
+                        <div class="mb-3" aria-hidden="true">
+                            <i class="bi bi-arrow-clockwise display-4 text-primary"></i>
+                        </div>
+                        <h3 id="refresh-title" class="card-title h4">Auto-Refresh</h3>
+                        <div class="mt-auto">
+                            <div class="mb-3">
+                                <span class="badge bg-{REFRESH_STATUS_COLOR} fs-6 py-2 px-3">
+                                    Interval: {REFRESH_INTERVAL}
+                                </span>
+                            </div>
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <div class="h6 text-success">{LAST_REFRESH}</div>
+                                    <small class="text-muted">Last Check</small>
+                                </div>
+                                <div class="col-6">
+                                    <div class="h6 text-info">{NEXT_REFRESH}</div>
+                                    <small class="text-muted">Next Check</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <article class="card feature-card border-0 shadow h-100" 
+                         role="region" 
                          aria-labelledby="server-title">
                     <div class="card-body text-center p-4 d-flex flex-column">
                         <div class="mb-3" aria-hidden="true">

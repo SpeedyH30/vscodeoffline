@@ -1,5 +1,28 @@
 # Change Log for Visual Studio Code - Offline Gallery and Updater
 
+## [2.0.3] - 2025-11-06
+
+### Added
+
+- Configurable refresh interval via `REFRESH_INTERVAL` environment variable (default: 3600 seconds)
+- Enhanced status page showing auto-refresh timing information
+  - Last refresh time
+  - Next refresh time
+  - Refresh interval
+  - Current refresh status
+- Improved logging for extension refresh checks with emojis (🔍 Checking, ✅ Complete)
+- JSON API now includes detailed refresh timing in `refresh` object
+- Application logs now properly output to Docker logs via gunicorn configuration
+  - Added `--error-logfile`, `--capture-output`, and `--enable-stdio-inheritance` flags
+  - Set `PYTHONUNBUFFERED=1` for immediate log output
+  - Logs show extension refresh checks and completion messages
+
+### Changed
+
+- Status page now clearly indicates when gallery is checking for new extensions
+- Auto-refresh card added to status dashboard for better visibility
+- Logging format standardized with timestamps for easier troubleshooting
+
 ## [2.0.2] - 2025-11-06
 
 ### Fixed
