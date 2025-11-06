@@ -420,7 +420,7 @@ class VSCUpdates(object):
     def signal_updated(artifactdir):
         signalpath = os.path.join(artifactdir, 'updated.json')
         result = {
-            'updated': datetime.datetime.utcnow()
+            'updated': datetime.datetime.now(datetime.UTC)
         }
         with open(signalpath, 'w') as outfile:
             json.dump(result, outfile, cls=vsc.MagicJsonEncoder, indent=4)
@@ -593,6 +593,11 @@ class VSCMarketplace(object):
             if specifiedextensions and 'extensions' in specifiedextensions:
                 specified = []
                 for packagename in specifiedextensions['extensions']:
+                    # Validate extension name format
+                    if '.' not in packagename:
+                        log.warning(f"Skipping invalid extension name '{packagename}' - must be in 'publisher.extension' format (e.g., 'ms-python.python')")
+                        continue
+                    
                     extension = self.search_by_extension_name(packagename)
                     if extension:
                         log.info(f'Adding extension to mirror {packagename}')
@@ -622,6 +627,11 @@ class VSCMarketplace(object):
             return False
 
     def search_by_extension_name(self, extensionname):
+        # Validate that extensionname is in publisher.extension format
+        if '.' not in extensionname:
+            log.error(f"Invalid extension name format: '{extensionname}'. Must be in 'publisher.extension' format (e.g., 'ms-python.python')")
+            return False
+        
         if self.prerelease:
             result = self._query_marketplace(
                 vsc.FilterType.ExtensionName, extensionname)

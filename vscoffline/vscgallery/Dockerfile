@@ -35,5 +35,4 @@ CMD gunicorn  \
     --max-requests $MAX_REQUESTS \
     --max-requests-jitter $MAX_REQUESTS_JITTER \
     --worker-class gthread \
-    --preload \
     server:application

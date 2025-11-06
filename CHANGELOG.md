@@ -1,5 +1,23 @@
 # Change Log for Visual Studio Code - Offline Gallery and Updater
 
+## [2.0.2] - 2025-11-06
+
+### Fixed
+
+- **Critical:** Removed `--preload` flag from gunicorn configuration that prevented background extension indexing thread from running in worker processes
+- Gallery now properly detects and indexes new extensions automatically within the hourly refresh interval
+- Fixed issue where gallery would serve stale extension data indefinitely despite new extensions being synced
+- Updated deprecated `datetime.utcnow()` to use timezone-aware `datetime.now(datetime.UTC)`
+
+## [2.0.1] - 2025-11-06
+
+### Fixed
+
+- Added validation for extension names in API queries to ensure proper `publisher.extension` format
+- Improved error handling to prevent 400 errors from malformed extension name queries
+- Added clear error messages when extension names don't include publisher prefix
+- Enhanced extension name validation in custom extension JSON file processing
+
 ## [2.0.0] - 2025-11-05
 
 ### Major Changes
