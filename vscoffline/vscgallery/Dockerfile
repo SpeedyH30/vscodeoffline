@@ -1,20 +1,20 @@
 FROM python:3.12-alpine
 WORKDIR /opt/vscoffline
 
-# Install build dependencies for watchdog and other packages
-RUN apk --no-cache add \
+COPY ./vscoffline/ ./
+
+RUN mkdir /artifacts/
+
+# Install build dependencies, pip packages, then remove build deps in same layer
+RUN apk --no-cache add --virtual .build-deps \
     libc-dev \
     binutils \
     gcc \
     python3-dev \
     musl-dev \
-    linux-headers
-
-COPY ./vscoffline/ ./
-
-RUN mkdir /artifacts/
-
-RUN pip install --no-cache-dir -r vscgallery/requirements.txt
+    linux-headers \
+    && pip install --no-cache-dir -r vscgallery/requirements.txt \
+    && apk del .build-deps
 
 ENV ARTIFACTS=/artifacts
 ENV BIND=0.0.0.0:8080
@@ -35,5 +35,4 @@ CMD gunicorn  \
     --max-requests $MAX_REQUESTS \
     --max-requests-jitter $MAX_REQUESTS_JITTER \
     --worker-class gthread \
-    --preload \
     server:application
